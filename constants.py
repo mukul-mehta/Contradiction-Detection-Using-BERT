@@ -27,3 +27,5 @@ SPECIAL_TOKENS = {
     'CLS': ['[CLS]'],
     'SEP': ['[SEP]'] 
 }
+
+MAX_LEN = 128
