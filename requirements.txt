@@ -29,3 +29,4 @@ torch==1.5.1
 tqdm==4.46.1
 transformers==2.11.0
 urllib3==1.25.9
+wget==3.2
