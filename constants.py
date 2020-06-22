@@ -29,3 +29,21 @@ SPECIAL_TOKENS = {
 }
 
 MAX_LEN = 128
+EPOCHS = 4
+
+SEED_VALUE = 42
+
+DEFAULT_MODEL_PARAMS = {
+    'learning_rate': 2e-5, 
+    'epsilon': 1e-8,
+    'beta1': 0.9,
+    'beta2': 0.999,
+    'weight_decay': 0.0, 
+    'correct_bias': True
+}
+
+BATCH_PRINT_FREQ = 500
+
+GRAD_CLIP_VALUE = 1.0
+
+SAVED_MODEL_LOCATION = "./saved-model"
