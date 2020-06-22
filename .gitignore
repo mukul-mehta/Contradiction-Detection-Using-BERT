@@ -132,3 +132,6 @@ data/
 logs/
 .vscode/
 preprocessed_data/
+saved-model/
+sanity.sh
+.pycodestylerc

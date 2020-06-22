@@ -4,7 +4,7 @@
 SNLI_DATASET_URL = {
     "train": "https://cs-datasets-metamehta.s3.ap-south-1.amazonaws.com/snli_1.0_train.csv",
     "validation": "https://cs-datasets-metamehta.s3.ap-south-1.amazonaws.com/snli_1.0_dev.csv",
-    "test": "https://cs-datasets-metamehta.s3.ap-south-1.amazonaws.com/snli_1.0_test.csv" 
+    "test": "https://cs-datasets-metamehta.s3.ap-south-1.amazonaws.com/snli_1.0_test.csv"
 }
 
 SNLI_FILE_NAMES = {
@@ -16,8 +16,8 @@ SNLI_FILE_NAMES = {
 BATCH_SIZE = 32
 
 DATASET_LABELS = {
-    'contradiction' : 0,
-    'entailment' : 1, 
+    'contradiction': 0,
+    'entailment': 1,
     'neutral': 2
 }
 
@@ -25,7 +25,7 @@ PREPROCESSED_FOLDER = "preprocessed_data"
 
 SPECIAL_TOKENS = {
     'CLS': ['[CLS]'],
-    'SEP': ['[SEP]'] 
+    'SEP': ['[SEP]']
 }
 
 MAX_LEN = 128
@@ -34,11 +34,11 @@ EPOCHS = 4
 SEED_VALUE = 42
 
 DEFAULT_MODEL_PARAMS = {
-    'learning_rate': 2e-5, 
+    'learning_rate': 2e-5,
     'epsilon': 1e-8,
     'beta1': 0.9,
     'beta2': 0.999,
-    'weight_decay': 0.0, 
+    'weight_decay': 0.0,
     'correct_bias': True
 }
 

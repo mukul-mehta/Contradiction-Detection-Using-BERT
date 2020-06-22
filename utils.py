@@ -1,16 +1,17 @@
-import coloredlogs
 import datetime
 import logging
 import os
 import time
-import yaml
-
 from logging.config import dictConfig
+
+import coloredlogs
+import yaml
 
 
 def format_time(elapsed):
-  elapsed_rounded = int(round(elapsed))
-  return str(datetime.timedelta(seconds = elapsed_rounded))
+    elapsed_rounded = int(round(elapsed))
+    return str(datetime.timedelta(seconds=elapsed_rounded))
+
 
 class LogUtils:
 
@@ -33,5 +34,6 @@ class LogUtils:
             coloredlogs.install(level=default_level)
             print('Failed to load configuration file. Using default configs')
         return logging.getLogger(name)
+
 
 LOG = LogUtils.setup_logger(__name__)
