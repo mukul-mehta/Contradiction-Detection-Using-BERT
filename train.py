@@ -3,7 +3,9 @@
 import argparse
 import json
 import os
+import time
 
+import numpy as np
 import torch
 from tqdm import trange
 
@@ -17,8 +19,8 @@ from utils import LogUtils, format_time
 LOG = LogUtils.setup_logger(__name__)
 
 
-def train_and_evaluate_bert(train_dataloder, validation_dataloader, num_labels, model_size="base", cased=False,
-                            output_attentions=False, output_hidden_states=False, optimizer="AdamW",
+def train_and_evaluate_bert(train_dataloader, validation_dataloader, num_labels, use_gpu=True, model_size="base",
+                            cased=False, output_attentions=False, output_hidden_states=False, optimizer="AdamW",
                             params=DEFAULT_MODEL_PARAMS, epochs=EPOCHS,
                             save_model=True, save_location=SAVED_MODEL_LOCATION):
     """
@@ -28,6 +30,7 @@ def train_and_evaluate_bert(train_dataloder, validation_dataloader, num_labels, 
         train_dataloder: (torch.utils.data.TensorDataset) Dataloder for the Training Set
         validation_dataloder: (torch.utils.data.TensorDataset) Dataloder for the Validation Set
         num_labels: (int) Number of output labels
+        use_gpu: (bool) Use GPU if available for training
         model_size: (str) Size of BERT Model ["base", "large"]
         cased: (bool) Use cased or uncased BERT model
         output_attentions: (bool) Output attention values from BERT Model
@@ -39,13 +42,21 @@ def train_and_evaluate_bert(train_dataloder, validation_dataloader, num_labels, 
         save_location: (str) Location to save model after training
     """
 
+    if use_gpu and torch.cuda.is_available():
+        device = torch.device("cuda")
+        LOG.info(f"There are {torch.cuda.device_count()} GPU(s) available")
+        LOG.info(f"Using {torch.cuda.get_device_name(0)}")
+    else:
+        device = torch.device("cpu")
+        LOG.info("Using CPU")
+
     BertModel = BERTModel(
         train_dataloader=train_dataloader,
         num_labels=num_labels,
         model_size=model_size,
         output_attentions=output_attentions,
         output_hidden_states=output_attentions,
-        optimizer=optimzer,
+        optimizer=optimizer,
         lr=params["learning_rate"],
         eps=params["epsilon"],
         beta1=params["beta1"],
@@ -68,6 +79,7 @@ def train_and_evaluate_bert(train_dataloder, validation_dataloader, num_labels, 
     torch.manual_seed(seed_val)
     torch.cuda.manual_seed_all(seed_val)
 
+    loss_values = []
     metrics = []
 
     LOG.info("Training Started!")
@@ -170,10 +182,6 @@ def train_and_evaluate_bert(train_dataloder, validation_dataloader, num_labels, 
         os.makedirs(output_dir)
 
     LOG.info(f"Saving model to {output_dir}")
-
-    model_to_save = model.module if hasattr(model, 'module') else model
-    model_to_save.save_pretrained(output_dir)
-    tokenizer.save_pretrained(output_dir)
 
     with open(os.path.join(output_dir, "model-metrics.json"), "w") as f:
         model_metrics = json.dumps(metrics)

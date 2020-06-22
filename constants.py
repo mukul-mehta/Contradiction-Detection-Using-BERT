@@ -42,7 +42,7 @@ DEFAULT_MODEL_PARAMS = {
     'correct_bias': True
 }
 
-BATCH_PRINT_FREQ = 500
+BATCH_PRINT_FREQ = 200
 
 GRAD_CLIP_VALUE = 1.0
 
