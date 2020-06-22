@@ -1,8 +1,10 @@
+import json
 import os
 import time
 
 import numpy as np
 import torch
+from sklearn.metrics import accuracy_score, classification_report, hamming_loss
 from transformers import BertForSequenceClassification, BertTokenizer
 
 from constants import BATCH_PRINT_FREQ, SAVED_MODEL_LOCATION
@@ -34,7 +36,7 @@ def load_model_from_file(saved_model_location=SAVED_MODEL_LOCATION):
     return (model, tokenizer)
 
 
-def evaluate_on_test_set(prediction_dataloader, saved_model_location=SAVED_MODEL_LOCATION, use_gpu=False):
+def run_model_on_test_set(prediction_dataloader, saved_model_location=SAVED_MODEL_LOCATION, use_gpu=False):
 
     if use_gpu and torch.cuda.is_available():
         device = torch.device("cuda")
@@ -83,3 +85,36 @@ def evaluate_on_test_set(prediction_dataloader, saved_model_location=SAVED_MODEL
         LOG.info('Done with Predictions!')
 
         return (predictions, true_labels)
+
+
+def evaluate_model_on_test_set(prediction_dataloader, num_labels,
+                               saved_model_location=SAVED_MODEL_LOCATION, use_gpu=False
+                               ):
+
+    predictions, true_labels = run_model_on_test_set(
+        prediction_dataloader=prediction_dataloader,
+        saved_model_location=saved_model_location,
+        use_gpu=use_gpu
+    )
+    pred_labels = np.argmax(predictions, axis=1)
+
+    exact_match_score = accuracy_score(true_labels, pred_labels)
+    hamming_score = hamming_loss(true_labels, pred_labels)
+
+    labels = [0, 1, 2]
+    target_names = ["contradiction", "entailment", "neutral"]
+
+    prec_recall_report = classification_report(
+        true_labels, pred_labels, labels=labels, target_names=target_names, output_dict=True)
+
+    evaluation = {}
+    evaluation["exact_march_score"] = exact_match_score
+    evaluation["hamming_score"] = hamming_score
+    evaluation["prec_recall_report"] = prec_recall_report
+
+    with open(saved_model_location + "model-evaluation.json", "w") as f:
+        output = json.dumps(evaluation)
+        f.write(output)
+
+    return evaluation
+
