@@ -7,7 +7,6 @@ import torch
 from sklearn.metrics import accuracy_score, classification_report, hamming_loss
 from transformers import BertForSequenceClassification, BertTokenizer
 
-from constants import BATCH_PRINT_FREQ, SAVED_MODEL_LOCATION
 from utils import LogUtils, format_time
 
 LOG = LogUtils.setup_logger(__name__)
@@ -19,7 +18,7 @@ def flat_accuracy(preds, labels):
     return np.sum(pred_flat == labels_flat) / len(labels_flat)
 
 
-def load_model_from_file(saved_model_location=SAVED_MODEL_LOCATION):
+def load_model_from_file(saved_model_location):
 
     model_weight_dir = saved_model_location
 
@@ -33,10 +32,12 @@ def load_model_from_file(saved_model_location=SAVED_MODEL_LOCATION):
 
     tokenizer = BertTokenizer.from_pretrained(model_weight_dir)
 
+    LOG.info(f"Loaded pretrained model and tokenizer from {model_weight_dir}")
+
     return (model, tokenizer)
 
 
-def run_model_on_test_set(prediction_dataloader, saved_model_location=SAVED_MODEL_LOCATION, use_gpu=False):
+def run_model_on_test_set(prediction_dataloader, saved_model_location, use_gpu, batch_print_freq):
 
     if use_gpu and torch.cuda.is_available():
         device = torch.device("cuda")
@@ -53,7 +54,7 @@ def run_model_on_test_set(prediction_dataloader, saved_model_location=SAVED_MODE
     start_time = time.time()
 
     for idx, batch in enumerate(prediction_dataloader):
-        if idx % BATCH_PRINT_FREQ == 0 and idx != 0:
+        if idx % batch_print_freq == 0 and idx != 0:
             LOG.info(f"Done with batch {i} of {len(prediction_dataloader)}")
             elapsed = time.time() - start_time
             time_per_batch = elapsed / idx
@@ -87,22 +88,23 @@ def run_model_on_test_set(prediction_dataloader, saved_model_location=SAVED_MODE
         return (predictions, true_labels)
 
 
-def evaluate_model_on_test_set(prediction_dataloader, num_labels,
-                               saved_model_location=SAVED_MODEL_LOCATION, use_gpu=False
+def evaluate_model_on_test_set(prediction_dataloader, dataset_labels,
+                               saved_model_location, use_gpu, batch_print_freq
                                ):
 
     predictions, true_labels = run_model_on_test_set(
         prediction_dataloader=prediction_dataloader,
         saved_model_location=saved_model_location,
-        use_gpu=use_gpu
+        use_gpu=use_gpu,
+        batch_print_freq=batch_print_freq
     )
     pred_labels = np.argmax(predictions, axis=1)
 
     exact_match_score = accuracy_score(true_labels, pred_labels)
     hamming_score = hamming_loss(true_labels, pred_labels)
 
-    labels = [0, 1, 2]
-    target_names = ["contradiction", "entailment", "neutral"]
+    labels = list(dataset_labels.values())
+    target_names = list(dataset_labels.keys())
 
     prec_recall_report = classification_report(
         true_labels, pred_labels, labels=labels, target_names=target_names, output_dict=True)
@@ -112,9 +114,4 @@ def evaluate_model_on_test_set(prediction_dataloader, num_labels,
     evaluation["hamming_score"] = hamming_score
     evaluation["prec_recall_report"] = prec_recall_report
 
-    with open(saved_model_location + "model-evaluation.json", "w") as f:
-        output = json.dumps(evaluation)
-        f.write(output)
-
     return evaluation
-

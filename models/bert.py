@@ -5,10 +5,28 @@ from transformers import (AdamW, AdamWeightDecay,
 
 class BERTModel:
 
-    def __init__(self, train_dataloader, num_labels, model_size="base", cased=False,
-                 output_attentions=False, output_hidden_states=False,
-                 optimizer="AdamW", lr=2e-5, eps=1e-8, beta1=0.9, beta2=0.999,
-                 weight_decay=0.0, correct_bias=True, epochs=4):
+    def __init__(self, train_dataloader, num_labels, model_size, cased,
+                 output_attentions, output_hidden_states,
+                 optimizer, lr, eps, beta1, beta2,
+                 weight_decay, correct_bias, epochs):
+        """
+            Args:
+            train_dataloder: (torch.utils.data.TensorDataset) Dataloder for the Training Set
+            num_labels: (int) Number of output labels
+            model_size: (str) Size of BERT Model ["base", "large"]
+            cased: (bool) Use cased or uncased BERT model
+            output_attentions: (bool) Output attention values from BERT Model
+            output_hidden_states: (bool) Output embeddings generated from BERT layers
+            optimizer: (str) Name of the Optimizer ["AdamW", "AdamWeightDecay"]
+            lr: (float) Learning Rate for the optimizer
+            eps: (float) Epsilon value for optimizer
+            beta1: (float) Beta1 value for Adam optimizer
+            beta2: (float) Beta2 value for Adam optimizer
+            weight_decay: (float) Weight Decay value for Adam optimizer
+            correct_bias: (float) Correct for bias terms in Adam Optimizer, default = True
+            epochs: (int) Number of epochs to run the model.
+        """
+
         self.num_labels = num_labels
         self.model_size = model_size
         self.cased = cased
@@ -22,8 +40,8 @@ class BERTModel:
         self.weight_decay = weight_decay
         self.correct_bias = correct_bias
 
-        self.train_dataloader = train_dataloader
-        self.epochs = epochs
+        self._train_dataloader = train_dataloader
+        self._epochs = epochs
 
         if model_size.lower() == "base":
             if cased:
@@ -81,3 +99,9 @@ class BERTModel:
 
     def scheduler(self):
         return self._scheduler
+
+    def epochs(self):
+        return self._epochs
+
+    def train_dataloader(self):
+        return self._train_dataloader

@@ -11,9 +11,7 @@ from keras.preprocessing.sequence import pad_sequences
 from torch.utils.data import (DataLoader, RandomSampler, SequentialSampler,
                               TensorDataset)
 
-from constants import (BATCH_SIZE, DATASET_LABELS, MAX_LEN,
-                       PREPROCESSED_FOLDER, SNLI_DATASET_URL, SNLI_FILE_NAMES,
-                       SPECIAL_TOKENS)
+from constants import SNLI_DATASET_URL, SNLI_FILE_NAMES, SPECIAL_TOKENS
 from utils import LogUtils
 
 LOG = LogUtils.setup_logger(__name__)
@@ -27,15 +25,16 @@ class SNLIDataset(object):
     """
 
     def __init__(
-        self, tokenizer, data_folder="./data", batch_size=BATCH_SIZE, use_padding=True,
-        dataset_labels=DATASET_LABELS, download_dataset=False
+        self, tokenizer, data_folder, preprocessed_folder, batch_size,
+        max_len_tokens, dataset_labels, download_dataset=False, use_padding=True
     ):
 
         self.data_folder = data_folder
         self.batch_size = batch_size
         self.use_padding = use_padding
-        self.preproccesed_folder = PREPROCESSED_FOLDER
+        self.preproccesed_folder = preprocessed_folder
         self.tokenizer = tokenizer
+        self.max_len_tokens = max_len_tokens
 
         self.dataset_labels = dataset_labels
 
@@ -114,7 +113,8 @@ class SNLIDataset(object):
                 processed_labels.append(label)
 
             except Exception as e:
-                LOG.error(e, exc_info=True)
+                LOG.error(e)
+                LOG.error("Skipping over sentence pair!")
                 continue
 
         sentence_tokens = []
@@ -135,6 +135,8 @@ class SNLIDataset(object):
         return np.array(sentence_tokens), np.array(input_ids), np.array(token_lengths), np.array(processed_labels)
 
     def preprocess_dataset(self, d_partition="train"):
+
+        LOG.info(f"Preproccessing {d_partition} data")
 
         if d_partition.lower() not in ["train", "dev", "validation", "test"]:
             raise BaseException(
@@ -170,12 +172,15 @@ class SNLIDataset(object):
             np.save(file_name_base + "token-lengths.npy", lengths)
             np.save(file_name_base + "labels.npy", labels)
 
+        LOG.info(f"Saving preprocessed {d_partition} data")
+
         return (tokens, ids, lengths, labels)
 
     def pad_and_create_attention_masks(self, input_ids):
+        max_len_tokens = self.max_len_tokens
         if self.use_padding:
             input_ids = pad_sequences(
-                input_ids, maxlen=MAX_LEN, dtype="long", value=0, truncating="post", padding="post")
+                input_ids, maxlen=max_len_tokens, dtype="long", value=0, truncating="post", padding="post")
 
         attention_masks = []
         for sentence in input_ids:
@@ -196,3 +201,6 @@ class SNLIDataset(object):
         dataloader = DataLoader(data, sampler=sampler, batch_size=batch_size)
 
         return (data, sampler, dataloader)
+
+    def labels(self):
+        return self.dataset_labels

@@ -9,9 +9,6 @@ import numpy as np
 import torch
 from tqdm import trange
 
-from constants import (BATCH_PRINT_FREQ, BATCH_SIZE, DEFAULT_MODEL_PARAMS,
-                       EPOCHS, GRAD_CLIP_VALUE, SAVED_MODEL_LOCATION,
-                       SEED_VALUE)
 from evaluate import flat_accuracy
 from models.bert import BERTModel
 from utils import LogUtils, format_time
@@ -19,27 +16,17 @@ from utils import LogUtils, format_time
 LOG = LogUtils.setup_logger(__name__)
 
 
-def train_and_evaluate_bert(train_dataloader, validation_dataloader, num_labels, use_gpu=True, model_size="base",
-                            cased=False, output_attentions=False, output_hidden_states=False, optimizer="AdamW",
-                            params=DEFAULT_MODEL_PARAMS, epochs=EPOCHS,
-                            save_model=True, save_location=SAVED_MODEL_LOCATION):
+def train_and_evaluate_bert(BERTModel, validation_dataloader, use_gpu, seed_value, batch_print_freq, grad_clip_value):
     """
     Train the BERT Model
 
     Args:
-        train_dataloder: (torch.utils.data.TensorDataset) Dataloder for the Training Set
+        BERTModel: (models.bert) Object of BERTModel class, containing model, optimizer and scheduler
         validation_dataloder: (torch.utils.data.TensorDataset) Dataloder for the Validation Set
-        num_labels: (int) Number of output labels
         use_gpu: (bool) Use GPU if available for training
-        model_size: (str) Size of BERT Model ["base", "large"]
-        cased: (bool) Use cased or uncased BERT model
-        output_attentions: (bool) Output attention values from BERT Model
-        output_hidden_states: (bool) Output embeddings generated from BERT layers
-        optimizer: (str) Name of the Optimizer ["AdamW", "AdamWeightDecay"]
-        params: (dict) Hyperparameters for the model
-        epochs: (int) Number of epochs to run the model.
-        save_model: (bool) Save model after training is complete
-        save_location: (str) Location to save model after training
+        seed_value: (int) Seed Value for random number generation
+        batch_print_freq: (int) Number of batches after which info is logged
+        grad_clip_value: (float) Max value of gradient, higher gradients are clipped to this value
     """
 
     if use_gpu and torch.cuda.is_available():
@@ -50,34 +37,19 @@ def train_and_evaluate_bert(train_dataloader, validation_dataloader, num_labels,
         device = torch.device("cpu")
         LOG.info("Using CPU")
 
-    BertModel = BERTModel(
-        train_dataloader=train_dataloader,
-        num_labels=num_labels,
-        model_size=model_size,
-        output_attentions=output_attentions,
-        output_hidden_states=output_attentions,
-        optimizer=optimizer,
-        lr=params["learning_rate"],
-        eps=params["epsilon"],
-        beta1=params["beta1"],
-        beta2=params["beta2"],
-        weight_decay=params["weight_decay"],
-        correct_bias=params["correct_bias"],
-        epochs=epochs
-    )
-
     model = BERTModel.model()
     optimizer = BERTModel.optimizer()
     scheduler = BERTModel.scheduler()
+    epochs = BERTModel.epochs()
+    train_dataloader = BERTModel.train_dataloader()
 
     LOG.info("Model, Optimizer and Scheduler setup successfully!")
 
     model.cuda()
 
-    seed_val = SEED_VALUE
-    np.random.seed(seed_val)
-    torch.manual_seed(seed_val)
-    torch.cuda.manual_seed_all(seed_val)
+    np.random.seed(seed_value)
+    torch.manual_seed(seed_value)
+    torch.cuda.manual_seed_all(seed_value)
 
     loss_values = []
     metrics = []
@@ -95,7 +67,7 @@ def train_and_evaluate_bert(train_dataloader, validation_dataloader, num_labels,
         model.train()
 
         for step, batch in enumerate(train_dataloader):
-            if step % BATCH_PRINT_FREQ == 0 and not step == 0:
+            if step % batch_print_freq == 0 and not step == 0:
                 elapsed = time.time() - start_time
                 time_per_batch = elapsed / step
                 time_remaining = (len(train_dataloader) -
@@ -120,7 +92,7 @@ def train_and_evaluate_bert(train_dataloader, validation_dataloader, num_labels,
             total_loss += loss.item()
 
             loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.parameters(), GRAD_CLIP_VALUE)
+            torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip_value)
 
             optimizer.step()
             scheduler.step()
@@ -135,7 +107,7 @@ def train_and_evaluate_bert(train_dataloader, validation_dataloader, num_labels,
         epMetric["epoch_avg_loss"] = avg_train_loss
 
         LOG.info(f"\n==== Average Training Loss: {avg_train_loss} ====")
-        LOG.info(f"==== Training Epoch Time: {time_taken} ====\n")
+        LOG.info(f"==== Training Epoch Time: {time_taken_train} ====\n")
 
         LOG.info("Validation time!")
 
@@ -176,15 +148,5 @@ def train_and_evaluate_bert(train_dataloader, validation_dataloader, num_labels,
         metrics.append(epMetric)
 
     LOG.info("Training Complete!")
-
-    output_dir = save_location
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-
-    LOG.info(f"Saving model to {output_dir}")
-
-    with open(os.path.join(output_dir, "model-metrics.json"), "w") as f:
-        model_metrics = json.dumps(metrics)
-        f.write(model_metrics)
 
     return (model, metrics)
