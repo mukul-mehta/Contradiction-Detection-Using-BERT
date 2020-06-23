@@ -39,6 +39,9 @@ class LogUtils:
     @staticmethod
     def setup_logger(name, default_path='logging.yaml', default_level=logging.DEBUG):
         path = default_path
+        if not os.path.exists("logs"):
+            os.mkdir("logs")
+        
         if os.path.exists(path):
             with open(path, 'rt') as f:
                 try:

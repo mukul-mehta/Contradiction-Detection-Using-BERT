@@ -131,9 +131,9 @@ if __name__ == "__main__":
         use_padding=True
     )
 
-    train_tokens, train_input_ids, train_labels, train_token_lenghts = dataset.preprocess_dataset(
+    train_tokens, train_input_ids, train_token_lenghts, train_labels = dataset.preprocess_dataset(
         d_partition="train")
-    validation_tokens, validation_input_ids, validation_labels, validation_token_lenghts = dataset.preprocess_dataset(
+    validation_tokens, validation_input_ids, validation_token_lenghts, validation_labels = dataset.preprocess_dataset(
         d_partition="validation"
     )
 
