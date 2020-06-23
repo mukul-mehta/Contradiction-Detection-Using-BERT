@@ -43,36 +43,15 @@ class BERTModel:
         self._train_dataloader = train_dataloader
         self._epochs = epochs
 
-        if model_size.lower() == "base":
-            if cased:
-                model = BertForSequenceClassification.from_pretrained(
-                    'bert-base-cased',
+        cased_ = "uncased" if not cased else "cased"
+        model_name = f"bert-{model_size}-{cased_}"
+
+        model = BertForSequenceClassification.from_pretrained(
+                    model_name,
                     num_labels=num_labels,
                     output_attentions=output_attentions,
                     output_hidden_states=output_hidden_states
-                )
-            else:
-                model = BertForSequenceClassification.from_pretrained(
-                    'bert-base-uncased',
-                    num_labels=num_labels,
-                    output_hidden_states=output_attentions,
-                    output_attentions=output_attentions
-                )
-        else:
-            if cased:
-                model = BertForSequenceClassification.from_pretrained(
-                    'bert-large-cased',
-                    num_labels=num_labels,
-                    output_attentions=output_attentions,
-                    output_hidden_states=output_hidden_states
-                )
-            else:
-                model = BertForSequenceClassification.from_pretrained(
-                    'bert-large-uncased',
-                    num_labels=num_labels,
-                    output_attentions=output_attentions,
-                    output_hidden_states=output_hidden_states
-                )
+        )
 
         if optimizer == "AdamWeightDecay":
             optimizer = AdamWeightDecay(model.parameters(

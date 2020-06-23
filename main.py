@@ -47,6 +47,8 @@ parser.add_argument('--gpu', action='store_true',
                     help="Use GPU for training if available")
 parser.add_argument('--predict_on_test', action='store_true',
                     help="Load model from file and run on test set")
+parser.add_argument('--no_train', action='store_true',
+                    help="Don't train model, load model and quit")
 
 if __name__ == "__main__":
     args = parser.parse_args()
@@ -113,6 +115,7 @@ if __name__ == "__main__":
     USE_GPU = args.gpu
 
     RUN_PREDICTIONS = args.predict_on_test
+    NO_TRAIN = args.no_train
 
     model_name = f"bert-{MODEL_SIZE}-{CASED}"
     tokenizer = BertTokenizer.from_pretrained(model_name)
@@ -134,15 +137,21 @@ if __name__ == "__main__":
         d_partition="validation"
     )
 
+    LOG.info("Padding inputs and creating attention masks")
+
     train_input_ids, train_attention_masks = dataset.pad_and_create_attention_masks(
         train_input_ids)
     validation_input_ids, validation_attention_masks = dataset.pad_and_create_attention_masks(
         validation_input_ids)
 
+    LOG.info("Converting dataset to PyTorch TensorDataset")
+
     train_data, train_sampler, train_dataloader = dataset.convert_data_to_tensor_dataset(
         train_input_ids, train_attention_masks, train_labels)
     validation_data, validation_sampler, validation_dataloader = dataset.convert_data_to_tensor_dataset(
         validation_input_ids, validation_attention_masks, validation_labels)
+
+    LOG.info("Loading BERT Model, optimizer and scheduler")
 
     BERTModel = BERTModel(
         train_dataloader=train_dataloader,
@@ -160,6 +169,10 @@ if __name__ == "__main__":
         correct_bias=MODEL_PARAMS["correct_bias"],
         epochs=EPOCHS
     )
+
+    if NO_TRAIN:
+        LOG.info("Bye")
+        exit()
 
     model, metrics = train_and_evaluate_bert(
         BERTModel=BERTModel,

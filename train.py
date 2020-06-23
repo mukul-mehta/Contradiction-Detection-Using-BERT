@@ -45,11 +45,13 @@ def train_and_evaluate_bert(BERTModel, validation_dataloader, use_gpu, seed_valu
 
     LOG.info("Model, Optimizer and Scheduler setup successfully!")
 
-    model.cuda()
+    if use_gpu:
+        model.cuda()
 
     np.random.seed(seed_value)
     torch.manual_seed(seed_value)
-    torch.cuda.manual_seed_all(seed_value)
+    if use_gpu:
+        torch.cuda.manual_seed_all(seed_value)
 
     loss_values = []
     metrics = []
